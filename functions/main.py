@@ -9,8 +9,28 @@ initialize_app(cred)
 # Create a Flask app for HTTP-triggered functions
 app = Flask(__name__)
 
+
+# Middleware for Authentication
+def authenticate(token):
+    if not token or not token.startswith('Bearer '):
+        return None
+
+    id_token = token.split(' ')[1]
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        user_id = decoded_token['uid']
+        claims = decoded_token.get('claims', {})
+        return {'uid': user_id, 'admin': claims.get('admin', False)}
+    except Exception as e:
+        return None
+    
+
 @app.route("/setAdminRole", methods=["POST"])
 def set_admin_role():
+    user = authenticate(request.headers.get('Authorization'))
+    if not user or not user.get('admin', False):
+        return jsonify({"error": "Unauthorized"}), 401
+
     try:
         # Get the data from the request
         data = request.get_json()
@@ -30,6 +50,10 @@ def set_admin_role():
 
 @app.route("/revokeAdminRole", methods=["POST"])
 def revoke_admin_role():
+    user = authenticate(request.headers.get('Authorization'))
+    if not user or not user.get('admin', False):
+        return jsonify({"error": "Unauthorized"}), 401
+    
     try:
         # Get the data from the request
         data = request.get_json()
