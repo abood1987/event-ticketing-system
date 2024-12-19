@@ -4,6 +4,7 @@
       <v-toolbar-title>Event Ticketing System</v-toolbar-title>
       <v-spacer></v-spacer>
       <v-btn v-if="isAdmin" text @click="$router.push('/events')">Events</v-btn>
+      <v-btn v-if="isAdmin" text @click="$router.push('/admin/users')">Users</v-btn>
       <v-btn v-if="isAdmin" text @click="$router.push('/admin/events')">Admin</v-btn>
       <v-btn text @click="logout">Logout</v-btn>
     </v-app-bar>

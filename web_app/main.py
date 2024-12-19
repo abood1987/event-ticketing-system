@@ -22,9 +22,7 @@ def authenticate(token):
     id_token = token.split(' ')[1]
     try:
         decoded_token = auth.verify_id_token(id_token)
-        user_id = decoded_token['uid']
-        claims = decoded_token.get('claims', {})
-        return {'uid': user_id, 'admin': claims.get('admin', False)}
+        return {'uid': decoded_token['uid'], 'admin': decoded_token.get('admin', False)}
     except Exception as e:
         return None
     
@@ -105,23 +103,25 @@ def create_event():
         return jsonify({"error": "Unauthorized"}), 401
 
     data = request.json
-    required_fields = ['name', 'date', 'location', 'total_tickets']
+    required_fields = ['name', 'datetime', 'location', 'total_tickets', 'price']
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields."}), 400
 
     try:
         event_data = {
             'name': data['name'],
-            'date': data['date'],
+            'datetime': data['datetime'],  # Accept datetime as string
             'location': data['location'],
             'totalTickets': data['total_tickets'],
             'ticketsRemaining': data['total_tickets'],
+            'price': data['price'],  # New field
             'created_by': user['uid']
         }
         db.collection('events').add(event_data)
         return jsonify({"message": "Event created successfully!"}), 201
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/events/<event_id>', methods=['DELETE'])
 def delete_event(event_id):
@@ -133,6 +133,27 @@ def delete_event(event_id):
     event_ref.delete()
     return jsonify({"message": "Event deleted successfully!"})
 
+
+@app.route("/admin/users", methods=["GET"])
+def list_users():
+    user = authenticate(request.headers.get('Authorization'))
+    if not user or not user.get('admin', False):
+        return jsonify({"message": "Unauthorized access."}), 403
+    try:
+        # List all users
+        users = []
+        for user in auth.list_users().iterate_all():
+            users.append(
+                {
+                    "uid": user.uid,
+                    "email": user.email,
+                    "admin": user.custom_claims.get("admin", False) if user.custom_claims else False,
+                }
+            )
+        return jsonify(users), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 8080)))

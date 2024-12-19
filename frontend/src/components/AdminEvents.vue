@@ -10,6 +10,7 @@
           <v-card-text>
             <div class="d-flex justify-space-between align-center">
               <span class="font-weight-bold">{{ event.name }}</span>
+              <span>{{ formatDatetime(event.datetime) }} | ${{ event.price }}</span>
               <v-btn color="red" @click="deleteEvent(event.id)">Delete</v-btn>
             </div>
           </v-card-text>
@@ -25,13 +26,14 @@
           <v-form>
             <v-text-field v-model="newEvent.name" label="Event Name" required></v-text-field>
             <v-text-field v-model="newEvent.location" label="Location" required></v-text-field>
-            <v-text-field v-model="newEvent.date" label="Date" type="date" required></v-text-field>
+            <v-text-field v-model="newEvent.datetime" label="Datetime" type="datetime-local" required></v-text-field>
             <v-text-field
               v-model="newEvent.totalTickets"
               label="Total Tickets"
               type="number"
               required
             ></v-text-field>
+            <v-text-field v-model="newEvent.price" label="Price" type="number" required></v-text-field>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -54,8 +56,9 @@ export default {
       newEvent: {
         name: "",
         location: "",
-        date: "",
+        datetime: "",
         totalTickets: 0,
+        price: 0,
       },
     };
   },
@@ -98,8 +101,9 @@ export default {
         const event = {
           name: this.newEvent.name,
           location: this.newEvent.location,
-          date: this.newEvent.date,
+          datetime: this.newEvent.datetime,
           total_tickets: this.newEvent.totalTickets,
+          price: this.newEvent.price,
         };
         await this.$http.post("/events", event, {
           headers: { Authorization: `Bearer ${token}` },
@@ -119,9 +123,12 @@ export default {
       this.isCreateModalOpen = false;
     },
     async getAuthToken() {
-      const user = auth.currentUser; // Fix: Use auth directly
+      const user = auth.currentUser;
       if (!user) throw new Error("User not authenticated");
       return user.getIdToken();
+    },
+    formatDatetime(datetime) {
+      return new Date(datetime).toLocaleString();
     },
   },
 };
